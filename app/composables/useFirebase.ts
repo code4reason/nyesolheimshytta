@@ -29,13 +29,21 @@ export const useFirebase = () => {
       appId: config.public.firebaseAppId
     }
     
-    // Debug: Check if API key is set (only in development)
-    if (process.dev && !firebaseConfig.apiKey) {
-      console.error('Firebase API key is missing!')
-      console.error('Config:', {
+    // Debug: Check if API key is set
+    if (!firebaseConfig.apiKey) {
+      console.error('❌ Firebase API key is missing!')
+      console.error('Config check:', {
         hasApiKey: !!config.public.firebaseApiKey,
         hasAuthDomain: !!config.public.firebaseAuthDomain,
-        hasProjectId: !!config.public.firebaseProjectId
+        hasProjectId: !!config.public.firebaseProjectId,
+        apiKeyLength: config.public.firebaseApiKey?.length || 0,
+        authDomain: config.public.firebaseAuthDomain
+      })
+    } else {
+      console.log('✅ Firebase config loaded:', {
+        hasApiKey: true,
+        authDomain: firebaseConfig.authDomain,
+        projectId: firebaseConfig.projectId
       })
     }
     
