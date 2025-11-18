@@ -1,11 +1,48 @@
 <script setup lang="ts">
-const { user, isAuthenticated, loading, signInWithGoogle, signOut } = useAuth()
+const { user, isAuthenticated, loading, signInWithGoogle, signOut, getRemainingSessionTime } = useAuth()
 const errorMessage = ref<string>('')
+const remainingTime = ref<string>('')
+
+// Format remaining time
+const formatRemainingTime = (ms: number): string => {
+  if (ms <= 0) return '0 minutter'
+  
+  const hours = Math.floor(ms / (1000 * 60 * 60))
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60))
+  
+  if (hours > 0) {
+    return `${hours} ${hours === 1 ? 'time' : 'timer'} og ${minutes} ${minutes === 1 ? 'minutt' : 'minutter'}`
+  }
+  return `${minutes} ${minutes === 1 ? 'minutt' : 'minutter'}`
+}
+
+// Update remaining time every minute
+const updateRemainingTime = () => {
+  if (isAuthenticated.value) {
+    const remaining = getRemainingSessionTime()
+    remainingTime.value = formatRemainingTime(remaining)
+  } else {
+    remainingTime.value = ''
+  }
+}
+
+// Update immediately and then every minute
+onMounted(() => {
+  updateRemainingTime()
+  const interval = setInterval(updateRemainingTime, 60 * 1000) // Update every minute
+  onUnmounted(() => clearInterval(interval))
+})
+
+// Watch for auth changes
+watch(isAuthenticated, () => {
+  updateRemainingTime()
+})
 
 const handleSignIn = async () => {
   try {
     errorMessage.value = ''
     await signInWithGoogle()
+    updateRemainingTime()
   } catch (error: any) {
     errorMessage.value = error.message || 'Kunne ikke logge inn. Prøv igjen.'
     console.error('Sign in failed:', error)
@@ -16,6 +53,7 @@ const handleSignOut = async () => {
   try {
     errorMessage.value = ''
     await signOut()
+    remainingTime.value = ''
   } catch (error) {
     console.error('Sign out failed:', error)
   }
@@ -35,6 +73,9 @@ const handleSignOut = async () => {
         <div class="user-info">
           <p>Welcome, {{ user?.displayName || user?.email }}</p>
           <img v-if="user?.photoURL" :src="user.photoURL" :alt="user.displayName || 'User'" class="avatar" />
+          <div v-if="remainingTime" class="session-time">
+            <small>Sesjon utløper om: {{ remainingTime }}</small>
+          </div>
         </div>
         <button @click="handleSignOut" class="btn btn-outline">Sign Out</button>
       </div>
@@ -135,6 +176,12 @@ h1 {
   border: 1px solid #ff4444;
   margin-bottom: 1rem;
   max-width: 400px;
+}
+
+.session-time {
+  margin-top: 0.5rem;
+  color: #888;
+  font-size: 0.875rem;
 }
 </style>
 

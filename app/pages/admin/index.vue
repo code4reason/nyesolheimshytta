@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const { user, isAuthenticated, loading, signOut } = useAuth();
+const { user, isAuthenticated, loading, signOut, getRemainingSessionTime } = useAuth();
 const { getAllowedUsers, addAllowedUser, removeAllowedUser } =
   useAllowedUsers();
 
@@ -10,6 +10,30 @@ const newUserName = ref("");
 const addingUser = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
+const remainingTime = ref<string>("");
+
+// Format remaining time
+const formatRemainingTime = (ms: number): string => {
+  if (ms <= 0) return "0 minutter";
+
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (hours > 0) {
+    return `${hours} ${hours === 1 ? "time" : "timer"} og ${minutes} ${minutes === 1 ? "minutt" : "minutter"}`;
+  }
+  return `${minutes} ${minutes === 1 ? "minutt" : "minutter"}`;
+};
+
+// Update remaining time every minute
+const updateRemainingTime = () => {
+  if (isAuthenticated.value) {
+    const remaining = getRemainingSessionTime();
+    remainingTime.value = formatRemainingTime(remaining);
+  } else {
+    remainingTime.value = "";
+  }
+};
 
 // Redirect to home if not authenticated
 if (process.client && !loading.value && !isAuthenticated.value) {
@@ -83,6 +107,7 @@ watch(
     if (authenticated && !isLoading) {
       loadUsers();
     }
+    updateRemainingTime();
   },
   { immediate: true }
 );
@@ -92,6 +117,14 @@ onMounted(() => {
   if (isAuthenticated.value && !loading.value) {
     loadUsers();
   }
+  updateRemainingTime();
+  const interval = setInterval(updateRemainingTime, 60 * 1000); // Update every minute
+  onUnmounted(() => clearInterval(interval));
+});
+
+// Watch for auth changes
+watch(isAuthenticated, () => {
+  updateRemainingTime();
 });
 </script>
 
@@ -115,6 +148,9 @@ onMounted(() => {
           :alt="user.displayName || 'User'"
           class="avatar"
         />
+        <div v-if="remainingTime" class="session-time">
+          <small>Sesjon utløper om: {{ remainingTime }}</small>
+        </div>
       </div>
 
       <div class="admin-section">
@@ -420,5 +456,11 @@ h2 {
   display: flex;
   gap: 1rem;
   justify-content: center;
+}
+
+.session-time {
+  margin-top: 0.5rem;
+  color: #888;
+  font-size: 0.875rem;
 }
 </style>
