@@ -40,12 +40,23 @@ export const useAllowedUsers = () => {
       const allowedUsersRef = collection(db, 'allowedUsers')
       const querySnapshot = await getDocs(allowedUsersRef)
       
-      return querySnapshot.docs.map(doc => ({
+      console.log('Found', querySnapshot.docs.length, 'allowed users')
+      
+      const users = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }))
+      
+      console.log('Users:', users)
+      
+      return users
     } catch (error) {
       console.error('Error getting allowed users:', error)
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        code: (error as any)?.code,
+        name: (error as any)?.name
+      })
       return []
     }
   }

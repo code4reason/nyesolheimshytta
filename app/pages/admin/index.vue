@@ -76,9 +76,20 @@ const handleSignOut = async () => {
   }
 };
 
-// Load users on mount
+// Watch for authentication state and load users when ready
+watch(
+  [isAuthenticated, loading],
+  ([authenticated, isLoading]) => {
+    if (authenticated && !isLoading) {
+      loadUsers();
+    }
+  },
+  { immediate: true }
+);
+
+// Also try to load on mount as fallback
 onMounted(() => {
-  if (isAuthenticated.value) {
+  if (isAuthenticated.value && !loading.value) {
     loadUsers();
   }
 });
