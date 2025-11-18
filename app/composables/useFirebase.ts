@@ -29,6 +29,16 @@ export const useFirebase = () => {
       appId: config.public.firebaseAppId
     }
     
+    // Debug: Check if API key is set (only in development)
+    if (process.dev && !firebaseConfig.apiKey) {
+      console.error('Firebase API key is missing!')
+      console.error('Config:', {
+        hasApiKey: !!config.public.firebaseApiKey,
+        hasAuthDomain: !!config.public.firebaseAuthDomain,
+        hasProjectId: !!config.public.firebaseProjectId
+      })
+    }
+    
     return initializeApp(firebaseConfig)
   }
   
